@@ -299,6 +299,20 @@ Administrative write actions may be added later, with explicit allowlists, confi
 
 See [Telegram control plane requirements](TELEGRAM_CONTROL_PLANE.md).
 
+### BR-19. Multimodal and per-asset paid routing
+
+AI Gateway must not assume that every routed workload is text-only.
+
+Future clients must be able to request non-text workloads such as image generation/editing through the same provider/account/budget infrastructure.
+
+For paid multimodal workloads, `paid_allowed=true` is not sufficient by itself. The Gateway must support hard cost constraints such as maximum cost per request/asset and project/workload budgets.
+
+Model routing for image generation must consider modality-specific requirements such as resolution, aspect ratio, reference-image support, layout/text fidelity, latency and batch/interactive execution mode.
+
+Provider/model/pricing churn must remain Gateway-owned rather than client-owned.
+
+See [Multimodal and paid capacity requirements](MULTIMODAL_PAID.md).
+
 ## 6. Policy requirements
 
 The gateway should support at least these policy dimensions:
