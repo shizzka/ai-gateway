@@ -28,6 +28,7 @@ The gateway should hide provider-specific routing, quotas, temporary outages and
 - [Business requirements](docs/BUSINESS_REQUIREMENTS.md)
 - [Routing requirements](docs/ROUTING_REQUIREMENTS.md)
 - [Client integration contract](docs/CLIENT_INTEGRATION.md)
+- [Design notes / ideas](docs/DESIGN_NOTES.md)
 - [Migration from Job Hunter](docs/MIGRATION_FROM_JOB_HUNTER.md)
 - [Migration from Relocation / OSINT](docs/MIGRATION_FROM_RELOCATION_OSINT.md)
 
