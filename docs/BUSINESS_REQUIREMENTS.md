@@ -277,6 +277,28 @@ The intended developer experience is:
 
 A dedicated integration contract must be sufficient for a coding agent to add Gateway access to a new project without reading Job Hunter or Relocation / OSINT internals.
 
+### BR-18. Telegram operational control plane
+
+AI Gateway should expose an optional Telegram control plane for operational visibility.
+
+The Telegram layer must support alerting and inspection for:
+
+- quota/rate-limit exhaustion and recovery;
+- credential/authentication failures;
+- model retirement/unavailability;
+- provider/account/local-node health transitions;
+- paid fallback usage and budget warnings;
+- elevated fallback/error/timeout rates;
+- recent routing activity during early rollout.
+
+It should also provide safe read-only commands for status, providers/accounts/models, quota, budgets and recent errors.
+
+Telegram must not be a hard dependency for routing. Gateway must continue operating when Telegram is unavailable.
+
+Administrative write actions may be added later, with explicit allowlists, confirmation and audit logging.
+
+See [Telegram control plane requirements](TELEGRAM_CONTROL_PLANE.md).
+
 ## 6. Policy requirements
 
 The gateway should support at least these policy dimensions:
