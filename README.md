@@ -26,8 +26,16 @@ The gateway should hide provider-specific routing, quotas, temporary outages and
 ## Documents
 
 - [Business requirements](docs/BUSINESS_REQUIREMENTS.md)
+- [Routing requirements](docs/ROUTING_REQUIREMENTS.md)
+- [Client integration contract](docs/CLIENT_INTEGRATION.md)
 - [Migration from Job Hunter](docs/MIGRATION_FROM_JOB_HUNTER.md)
 - [Migration from Relocation / OSINT](docs/MIGRATION_FROM_RELOCATION_OSINT.md)
+
+## For a new project
+
+Do not copy provider code from existing consumers.
+
+A new project should start from [Client integration contract](docs/CLIENT_INTEGRATION.md): add the reusable connector/SDK, identify the project, describe workload requirements, and let AI Gateway choose the concrete provider/model route.
 
 ## Current scope
 
