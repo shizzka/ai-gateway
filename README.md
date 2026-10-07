@@ -34,6 +34,7 @@ The gateway should hide provider-specific routing, quotas, temporary outages and
 - [Design notes / ideas](docs/DESIGN_NOTES.md)
 - [Telegram control plane](docs/TELEGRAM_CONTROL_PLANE.md)
 - [Multimodal and paid capacity](docs/MULTIMODAL_PAID.md)
+- [Provider discovery: RU payments / crypto / search](docs/PROVIDER_DISCOVERY_RU.md)
 - [Migration from Job Hunter](docs/MIGRATION_FROM_JOB_HUNTER.md)
 - [Migration from Relocation / OSINT](docs/MIGRATION_FROM_RELOCATION_OSINT.md)
 
