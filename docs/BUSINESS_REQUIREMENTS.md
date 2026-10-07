@@ -333,6 +333,47 @@ Paid capacity must remain opt-in per workload/project and should normally act as
 
 For Search/OSINT workloads this principle applies to search capacity as well as LLM capacity. Search providers that cannot be practically paid for from the user's available payment methods should be treated as free/trial-only resources, not as assumed paid fallback.
 
+### BR-21. Shared quota domains and cross-capability exhaustion
+
+Provider capabilities must not be assumed to have independent quotas.
+
+A single provider account may expose multiple capabilities such as:
+
+- text generation;
+- vision;
+- web search;
+- image generation.
+
+Those capabilities may consume the same underlying account-level quota or may trigger account-wide throttling.
+
+Observed example: exhausting the Ollama account's web-search quota can cause subsequent LLM generation calls on the same account to return HTTP 429 as well. In practice, search exhaustion can therefore invalidate the entire account for other workloads.
+
+The Gateway / shared resource-balancing layer must model quota ownership explicitly:
+
+- provider-level;
+- account-level;
+- capability-level;
+- model-level;
+- shared quota domain spanning several capabilities.
+
+A resource that shares a quota domain with critical capacity must not be consumed independently by another project without considering the blast radius.
+
+Search/LLM routing must therefore coordinate reservations and reserve floors for shared accounts.
+
+Example:
+
+```text
+ollama-account-1
+  quota_domain = account
+  capabilities = [llm, web_search]
+
+OSINT web search consumes account quota
+→ remaining shared capacity decreases
+→ Job Hunter LLM capacity on the same account also decreases
+```
+
+Capacity planning and Telegram status must expose this relationship rather than showing search and LLM quotas as unrelated pools.
+
 ## 6. Policy requirements
 
 The gateway should support at least these policy dimensions:
