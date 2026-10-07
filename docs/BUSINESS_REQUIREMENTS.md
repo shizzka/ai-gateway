@@ -47,11 +47,12 @@ The initial target consumers are:
    - chat responses;
    - vision tasks where required.
 
-2. **Relocation / OSINT workflows**
+2. **Relocation / OSINT workflows** — a first-class Gateway consumer, not a secondary compatibility case:
    - independent fact discovery;
    - extraction and summarization;
-   - cross-checking by multiple models;
-   - higher-quality final judgement where explicitly allowed.
+   - parallel/cross-checking work by multiple distinct model identities;
+   - free-first researcher/scout calls;
+   - a separately governed higher-quality judge call where paid usage may be explicitly allowed.
 
 3. **Future personal automation projects**
    - must be able to reuse the same gateway without copying provider logic.
@@ -200,6 +201,28 @@ Infrastructure failure must not be converted into a valid-looking business resul
 
 Example: if every matcher-capable model is unavailable, Job Hunter should receive an unavailable/deferred outcome rather than a fabricated low relevance score.
 
+### BR-14. Diversity / anti-affinity for independent research
+
+OSINT workflows must be able to request multiple calls that are intentionally independent.
+
+The Gateway must support a routing constraint that prevents related researcher/scout calls from accidentally resolving to the same effective model identity when diversity is required.
+
+Effective identity should be based on the actual served provider/model combination rather than only the logical model name requested by the client.
+
+This requirement does **not** imply that the Gateway itself must perform OSINT consensus or judging. It means the client can ask the Gateway for genuinely distinct model capacity.
+
+### BR-15. Role-specific budget policy
+
+Different roles inside one workflow may have different cost permissions.
+
+Example for Relocation / OSINT:
+
+- researcher/scout calls: free-only by default;
+- reserve researcher capacity: free-only unless explicitly changed;
+- final judge: may use a paid high-quality model when that workload policy explicitly allows it.
+
+Paid permission for one role must not implicitly enable paid capacity for other roles in the same project.
+
 ## 6. Policy requirements
 
 The gateway should support at least these policy dimensions:
@@ -209,7 +232,9 @@ The gateway should support at least these policy dimensions:
 - paid allowed: yes/no;
 - weaker-model degradation allowed: yes/no;
 - timeout/deadline;
-- project/workload identity for analytics and policy.
+- project/workload identity for analytics and policy;
+- role-specific budget / paid policy;
+- optional diversity or anti-affinity group for independent multi-model work.
 
 Policies may later be configured centrally per project and task.
 
@@ -254,6 +279,7 @@ The product is successful when:
 5. Routing decisions and failures can be diagnosed from metadata.
 6. A client can request a workload by capability/quality policy without naming a specific provider account.
 7. Gateway failure cannot silently masquerade as a valid domain decision.
+8. Relocation / OSINT can run its researcher/scout and judge roles through the same Gateway while preserving free-only scout policy, explicit judge budget policy and required model diversity.
 
 ## 10. Open product questions
 
@@ -265,7 +291,7 @@ These remain intentionally unresolved:
 - how provider quotas are discovered versus inferred from errors;
 - whether quality tiers are global or task-specific;
 - how model quality is measured and updated;
-- whether independent multi-model execution belongs in the gateway or in higher-level OSINT orchestration;
+- exact boundary between higher-level OSINT orchestration and Gateway diversity enforcement; the current requirement is that orchestration may remain in OSINT while Gateway can enforce requested model anti-affinity;
 - deployment topology for local and remote clients;
 - credential storage model;
 - whether budget ceilings should be global, per project or per workload.
