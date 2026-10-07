@@ -74,6 +74,7 @@ provider + account + model
 - [Design notes / идеи](docs/DESIGN_NOTES.md)
 - [Telegram control plane / мониторинг](docs/TELEGRAM_CONTROL_PLANE.md)
 - [Мультимодальность и paid-capacity](docs/MULTIMODAL_PAID.md)
+- [Провайдеры: РФ-оплата / крипта / web search](docs/PROVIDER_DISCOVERY_RU.md)
 - [Миграция Job Hunter](docs/MIGRATION_FROM_JOB_HUNTER.md)
 - [Миграция Relocation / OSINT](docs/MIGRATION_FROM_RELOCATION_OSINT.md)
 
