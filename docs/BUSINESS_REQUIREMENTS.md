@@ -4,7 +4,7 @@
 
 AI Gateway provides client applications with a single stable interface to LLM capacity while hiding provider-specific accounts, models, quotas, failures and routing rules.
 
-The business goal is to reduce dependency on any single provider and to maximize useful work from free or low-cost capacity without allowing infrastructure failures or weak fallback models to silently damage application decisions.
+The primary business goal is to aggregate fragmented free capacity across providers, accounts and local models into one usable pool, reducing dependence on any single provider and avoiding routine paid API spend. Low-cost paid capacity is a controlled reserve, not the default economic model. Infrastructure failures or weak fallback models must not silently damage application decisions.
 
 ## 2. Problem
 
@@ -312,6 +312,26 @@ Model routing for image generation must consider modality-specific requirements 
 Provider/model/pricing churn must remain Gateway-owned rather than client-owned.
 
 See [Multimodal and paid capacity requirements](MULTIMODAL_PAID.md).
+
+### BR-20. Free capacity aggregation is a primary product objective
+
+The Gateway exists in large part because individual free tiers are too small, unreliable or fragmented to support the client workloads by themselves.
+
+Free/trial/local capacity is therefore not merely an optimization. It is a first-class production resource pool.
+
+The Gateway must be able to:
+
+- combine legitimate free quotas from different providers and configured accounts;
+- track remaining quota independently per resource;
+- spread workload across free resources before paid capacity is considered;
+- predict whether the remaining free pool can finish a run;
+- stop or checkpoint long-running jobs before exhausting every reserve at once;
+- distinguish renewable free quota, one-time trial credit and local compute;
+- expose pool-level remaining capacity to clients and Telegram monitoring.
+
+Paid capacity must remain opt-in per workload/project and should normally act as a deliberately bounded reserve.
+
+For Search/OSINT workloads this principle applies to search capacity as well as LLM capacity. Search providers that cannot be practically paid for from the user's available payment methods should be treated as free/trial-only resources, not as assumed paid fallback.
 
 ## 6. Policy requirements
 
