@@ -359,3 +359,29 @@ provider:
 4. проверяется consistency на известных trap cases;
 5. только после этого route может перейти из `unverified_discount` в `verified_discount`.
 
+
+
+## Ollama: связанная квота search + LLM
+
+Практическое наблюдение из Relocation OSINT:
+
+- у аккаунта Ollama была квота примерно 200 web-search вызовов;
+- после полного исчерпания этой квоты LLM-вызовы на том же аккаунте также начали отвечать HTTP 429;
+- следовательно, `web_search` и LLM нельзя считать независимыми capacity pools.
+
+Для Gateway это означает:
+
+```text
+quota_scope = account
+shared_capabilities = [web_search, llm]
+```
+
+Search Gateway не должен выжигать такой аккаунт до нуля, если тот же аккаунт участвует в LLM fallback для Job Hunter или других интерактивных workload.
+
+Нужны:
+
+- account-level shared quota domain;
+- reserve floor;
+- project/workload allocation;
+- cross-capability health propagation;
+- Telegram alert вида «search exhaustion removed LLM capacity».
