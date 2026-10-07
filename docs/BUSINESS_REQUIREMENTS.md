@@ -223,6 +223,60 @@ Example for Relocation / OSINT:
 
 Paid permission for one role must not implicitly enable paid capacity for other roles in the same project.
 
+### BR-16. Task-to-model routing
+
+The Gateway must own the decision of which currently available model is suitable for a workload.
+
+Client projects must not maintain lists such as "use model X for matching, model Y for JSON, model Z for reasoning".
+
+A request must carry a workload descriptor with enough information to route safely. The descriptor may include:
+
+- task category / semantic role;
+- hard capabilities such as text, vision, coding or structured JSON;
+- quality tier;
+- context-size requirement;
+- latency preference or deadline;
+- cost policy;
+- degradation policy;
+- diversity / anti-affinity constraints;
+- response-format requirements.
+
+The Gateway then:
+
+1. filters out models that do not satisfy hard requirements;
+2. considers current health, quota and cooldown state;
+3. ranks eligible models for the requested workload;
+4. chooses a route according to cost/quality/latency policy;
+5. falls back only to models still compatible with the workload contract.
+
+The task-to-model mapping must be data/configuration driven. Adding a new model, retiring a model, or changing which model is preferred for a task must not require client-project code changes.
+
+### BR-17. Universal project connector
+
+A new project must be able to use AI Gateway through a thin reusable connector/SDK rather than implementing provider logic.
+
+The connector is responsible for:
+
+- Gateway endpoint/auth configuration;
+- serializing the workload descriptor;
+- sending prompts/messages and optional structured-output schema;
+- propagating deadlines/cancellation;
+- returning the model response plus safe routing metadata;
+- exposing stable Gateway error classes;
+- hiding provider credentials and provider-specific SDKs from the client project.
+
+Onboarding a new project must not require modifying Gateway source code for ordinary workloads.
+
+The intended developer experience is:
+
+1. add the Gateway connector dependency;
+2. configure the Gateway URL and project identity;
+3. define named workload profiles or pass a declarative workload descriptor;
+4. replace direct provider calls with connector calls;
+5. receive routing automatically.
+
+A dedicated integration contract must be sufficient for a coding agent to add Gateway access to a new project without reading Job Hunter or Relocation / OSINT internals.
+
 ## 6. Policy requirements
 
 The gateway should support at least these policy dimensions:
@@ -234,7 +288,9 @@ The gateway should support at least these policy dimensions:
 - timeout/deadline;
 - project/workload identity for analytics and policy;
 - role-specific budget / paid policy;
-- optional diversity or anti-affinity group for independent multi-model work.
+- optional diversity or anti-affinity group for independent multi-model work;
+- generic task category and/or project-defined named workload profile;
+- response format / structured-output requirements.
 
 Policies may later be configured centrally per project and task.
 
@@ -251,7 +307,10 @@ The first useful version should focus on:
 - explicit degradation policy;
 - local model support;
 - routing/usage analytics;
-- clear terminal error when no eligible resource remains.
+- clear terminal error when no eligible resource remains;
+- reusable client connector/SDK;
+- declarative workload descriptors;
+- model registry containing routing capabilities and workload suitability metadata.
 
 ## 8. Explicit non-goals for MVP
 
@@ -280,6 +339,8 @@ The product is successful when:
 6. A client can request a workload by capability/quality policy without naming a specific provider account.
 7. Gateway failure cannot silently masquerade as a valid domain decision.
 8. Relocation / OSINT can run its researcher/scout and judge roles through the same Gateway while preserving free-only scout policy, explicit judge budget policy and required model diversity.
+9. A new project can integrate by following one standalone integration document and using the reusable connector, without copying provider/model routing code.
+10. Client projects can request a task by workload requirements while Gateway selects the concrete model dynamically.
 
 ## 10. Open product questions
 
