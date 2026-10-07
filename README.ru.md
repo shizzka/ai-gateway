@@ -71,6 +71,7 @@ provider + account + model
 - [Требования к роутингу](docs/ROUTING_REQUIREMENTS.md)
 - [Контракт подключения нового проекта](docs/CLIENT_INTEGRATION.md)
 - [Design notes / идеи](docs/DESIGN_NOTES.md)
+- [Telegram control plane / мониторинг](docs/TELEGRAM_CONTROL_PLANE.md)
 - [Миграция Job Hunter](docs/MIGRATION_FROM_JOB_HUNTER.md)
 - [Миграция Relocation / OSINT](docs/MIGRATION_FROM_RELOCATION_OSINT.md)
 
