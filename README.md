@@ -1,5 +1,7 @@
 # AI Gateway
 
+Русская версия: [README.ru.md](README.ru.md)
+
 Shared LLM gateway for personal automation projects.
 
 > Status: **requirements / product discovery**. There is no production implementation yet.
