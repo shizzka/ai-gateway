@@ -20,13 +20,14 @@ The gateway should hide provider-specific routing, quotas, temporary outages and
 ## Initial consumers
 
 - Job Hunter
-- relocation / OSINT workflows
+- [Relocation / OSINT](https://github.com/shizzka/relocation-osint)
 - future personal automation projects
 
 ## Documents
 
 - [Business requirements](docs/BUSINESS_REQUIREMENTS.md)
 - [Migration from Job Hunter](docs/MIGRATION_FROM_JOB_HUNTER.md)
+- [Migration from Relocation / OSINT](docs/MIGRATION_FROM_RELOCATION_OSINT.md)
 
 ## Current scope
 
