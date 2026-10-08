@@ -253,7 +253,7 @@ The task-to-model mapping must be data/configuration driven. Adding a new model,
 
 ### BR-17. Universal project connector
 
-A new project must be able to use AI Gateway through a thin reusable connector/SDK rather than implementing provider logic.
+A new project must be able to use AI Gateway through a simple connector / stable service contract rather than implementing provider logic. The Gateway must remain a standalone service; client projects must not embed its routing engine as an in-process library.
 
 The connector is responsible for:
 
@@ -269,11 +269,13 @@ Onboarding a new project must not require modifying Gateway source code for ordi
 
 The intended developer experience is:
 
-1. add the Gateway connector dependency;
-2. configure the Gateway URL and project identity;
+1. configure a small project-side connector against the Gateway endpoint;
+2. configure the project identity;
 3. define named workload profiles or pass a declarative workload descriptor;
 4. replace direct provider calls with connector calls;
 5. receive routing automatically.
+
+A language-specific helper/SDK may exist as an optional convenience, but it must not be required to preserve routing behavior and must not contain Gateway-owned policy.
 
 A dedicated integration contract must be sufficient for a coding agent to add Gateway access to a new project without reading Job Hunter or Relocation / OSINT internals.
 
