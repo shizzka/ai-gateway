@@ -374,6 +374,44 @@ OSINT web search consumes account quota
 
 Capacity planning and Telegram status must expose this relationship rather than showing search and LLM quotas as unrelated pools.
 
+### BR-22. Critical capacity reservation and workload priority
+
+The Gateway must support protected capacity for critical workloads so that long-running or low-priority consumers cannot exhaust resources required by higher-priority clients.
+
+Workloads may be assigned priority classes or equivalent policy semantics. An initial model may be:
+
+- **P0** — critical interactive/production workloads such as Job Hunter runtime;
+- **P1** — normal interactive Gateway workloads;
+- **P2** — long-running batch workloads such as Relocation / OSINT research.
+
+The exact class names are an implementation detail, but the protection invariant is mandatory:
+
+> A lower-priority workload must not consume a resource below the reserve floor required by a higher-priority workload.
+
+The Gateway must therefore support:
+
+- reserve floors per provider/account/shared quota domain;
+- project/workload-specific access to those reserves;
+- refusal, queueing or checkpointing of lower-priority work when only protected capacity remains;
+- routing decisions that consider both current quota and protected quota;
+- persistent accounting so a restart does not forget consumed capacity or temporarily expose protected reserve;
+- observability showing protected, available and exhausted capacity separately.
+
+Example:
+
+```text
+ollama-account-1
+  quota_domain = account
+  protected_for_P0 = 25%
+
+OSINT / P2 may consume only unprotected capacity.
+When the remaining quota reaches the P0 floor:
+→ OSINT is deferred/checkpointed
+→ Job Hunter remains eligible to use the protected reserve
+```
+
+This requirement applies across shared capabilities. If web search and LLM generation share one account-level quota domain, a low-priority search workload must not exhaust capacity reserved for a critical LLM workload.
+
 ## 6. Policy requirements
 
 The gateway should support at least these policy dimensions:
@@ -387,7 +425,9 @@ The gateway should support at least these policy dimensions:
 - role-specific budget / paid policy;
 - optional diversity or anti-affinity group for independent multi-model work;
 - generic task category and/or project-defined named workload profile;
-- response format / structured-output requirements.
+- response format / structured-output requirements;
+- workload priority / criticality;
+- protected reserve floor and reserve-access policy.
 
 Policies may later be configured centrally per project and task.
 
@@ -438,6 +478,7 @@ The product is successful when:
 8. Relocation / OSINT can run its researcher/scout and judge roles through the same Gateway while preserving free-only scout policy, explicit judge budget policy and required model diversity.
 9. A new project can integrate by following one standalone integration document and using the reusable connector, without copying provider/model routing code.
 10. Client projects can request a task by workload requirements while Gateway selects the concrete model dynamically.
+11. Relocation / OSINT can exhaust all capacity available to its policy without consuming protected Job Hunter reserve; Job Hunter requests remain routable while that protected capacity exists.
 
 ## 10. Open product questions
 
