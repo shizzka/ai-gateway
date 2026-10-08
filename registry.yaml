@@ -1,0 +1,90 @@
+# Реестр: провайдеры, модели, workload-профили.
+# Всё тут — данные. Модель умерла / появилась новая → правишь YAML, клиенты не трогаешь.
+# Имена моделей и URL ниже — ПРИМЕРЫ, подставь актуальные.
+
+providers:
+  ollama-1:
+    base_url: https://ollama.com/v1          # проверь актуальный URL
+    key_env: OLLAMA_KEY_1
+    quota_domain: ollama-acct-1              # LLM и web_search этого аккаунта делят домен (BR-21)
+    data_policy: trains_on_data              # trusted | trains_on_data | local
+  openrouter-free:
+    base_url: https://openrouter.ai/api/v1
+    key_env: OPENROUTER_KEY
+    quota_domain: openrouter-free
+    data_policy: trains_on_data
+  lan-gpu:
+    base_url: http://192.168.1.50:11434/v1
+    quota_domain: lan-gpu
+    data_policy: local
+  paid-main:
+    base_url: https://api.example.com/v1
+    key_env: PAID_KEY
+    quota_domain: paid-main
+    data_policy: trusted
+
+models:
+  - id: ollama-big
+    provider: ollama-1
+    served_model: "gpt-oss:120b"
+    cost: free
+    caps: [text, json, reasoning]
+    context: 128000
+    tier: balanced               # максимум, который модель тянет: cheap < balanced < critical
+    family: gpt-oss              # семейство весов — для anti-affinity
+    suitability: {classification: 8, extraction: 8, judgement: 6, research_synthesis: 7}
+
+  - id: or-free-llama
+    provider: openrouter-free
+    served_model: "meta-llama/llama-3.3-70b-instruct:free"
+    cost: free
+    caps: [text, json]
+    context: 65000
+    tier: balanced
+    family: llama
+    suitability: {classification: 7, extraction: 7, research_synthesis: 6}
+
+  - id: lan-mid
+    provider: lan-gpu
+    served_model: "qwen2.5:32b"
+    cost: local
+    caps: [text, json]
+    context: 32000
+    tier: balanced               # честно оцени: тянет ли локалка balanced на твоих задачах
+    family: qwen
+    suitability: {classification: 6, extraction: 6}
+
+  - id: paid-judge
+    provider: paid-main
+    served_model: "your-best-model"
+    cost: paid
+    caps: [text, json, reasoning, vision]
+    context: 200000
+    tier: critical
+    family: frontier
+    suitability: {judgement: 10, reasoning: 10, classification: 9}
+
+workloads:
+  jh.vacancy_match:
+    category: classification
+    quality: balanced
+    need: [json]
+    paid_allowed: false
+    degrade_ok: false            # слабая модель не должна молча выдать «релевантность 3/10»
+    data: pii                    # резюме → только trusted/local провайдеры
+
+  osint.scout:
+    category: research_synthesis
+    quality: balanced
+    need: [json]
+    paid_allowed: false          # скауты — только free
+    degrade_ok: true
+    data: normal
+
+  osint.judge:
+    category: judgement
+    quality: critical
+    need: [json, reasoning]
+    paid_allowed: true           # платное разрешено только этой роли (BR-15)
+    degrade_ok: false
+    data: normal
