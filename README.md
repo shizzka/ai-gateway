@@ -29,6 +29,7 @@ The gateway should hide provider-specific routing, quotas, temporary outages and
 ## Documents
 
 - [Business requirements](docs/BUSINESS_REQUIREMENTS.md)
+- [Architecture](docs/ARCHITECTURE.md)
 - [Routing requirements](docs/ROUTING_REQUIREMENTS.md)
 - [Client integration contract](docs/CLIENT_INTEGRATION.md)
 - [Design notes / ideas](docs/DESIGN_NOTES.md)
@@ -42,8 +43,8 @@ The gateway should hide provider-specific routing, quotas, temporary outages and
 
 Do not copy provider code from existing consumers.
 
-A new project should start from [Client integration contract](docs/CLIENT_INTEGRATION.md): add the reusable connector/SDK, identify the project, describe workload requirements, and let AI Gateway choose the concrete provider/model route.
+A new project should start from [Client integration contract](docs/CLIENT_INTEGRATION.md): connect to the standalone Gateway through the simple connector/HTTP contract, identify the project, describe workload requirements, and let AI Gateway choose the concrete provider/model route. Client projects must not embed Gateway routing logic.
 
 ## Current scope
 
-This repository currently owns **requirements and migration planning only**. Implementation choices, API contracts and deployment architecture are intentionally not frozen yet.
+This repository currently owns **requirements, initial architecture decisions and migration planning**. The public API and implementation details are not frozen yet.
