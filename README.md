@@ -4,7 +4,7 @@
 
 Shared LLM gateway for personal automation projects.
 
-> Status: **requirements / product discovery**. There is no production implementation yet.
+> Status: **requirements / product discovery + thin MVP skeleton**. The implementation is intentionally minimal and not production-ready.
 
 AI Gateway is intended to provide projects such as [Job Hunter](https://github.com/shizzka/job-hunter) and relocation/OSINT tooling with one stable interface to multiple LLM providers, accounts and local models.
 
@@ -43,6 +43,39 @@ The gateway should hide provider-specific routing, quotas, temporary outages and
 Do not copy provider code from existing consumers.
 
 A new project should start from [Client integration contract](docs/CLIENT_INTEGRATION.md): add the reusable connector/SDK, identify the project, describe workload requirements, and let AI Gateway choose the concrete provider/model route.
+
+
+## Thin MVP skeleton
+
+The repository now contains a deliberately small runnable Gateway skeleton:
+
+- OpenAI-compatible `POST /v1/chat/completions`;
+- FastAPI HTTP service;
+- YAML provider/model/workload registry;
+- SQLite cooldown and request log state;
+- hard capability/cost/PII filtering;
+- simple suitability ranking;
+- fallback on retryable upstream failures;
+- shared `quota_domain` cooldown;
+- model-family anti-affinity;
+- typed unavailable/upstream errors;
+- basic invariant tests.
+
+This is a validation scaffold, not the final architecture.
+
+Run locally:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+pytest -q
+uvicorn main:app --host 127.0.0.1 --port 8800
+```
+
+Configure provider credentials through the environment variables referenced by `registry.yaml`. The registry currently contains example provider/model entries and must be reviewed before real traffic is enabled.
+
+Initial client integration should be Job Hunter behind a feature flag / shadow path. Relocation / OSINT integration comes later.
 
 ## Current scope
 
