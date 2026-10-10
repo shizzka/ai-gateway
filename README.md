@@ -32,6 +32,7 @@ The gateway should hide provider-specific routing, quotas, temporary outages and
 - [Architecture](docs/ARCHITECTURE.md)
 - [Routing requirements](docs/ROUTING_REQUIREMENTS.md)
 - [Client integration contract](docs/CLIENT_INTEGRATION.md)
+- [MVP failure and acceptance matrix](docs/MVP_FAILURE_MATRIX.md)
 - [Design notes / ideas](docs/DESIGN_NOTES.md)
 - [Telegram control plane](docs/TELEGRAM_CONTROL_PLANE.md)
 - [Multimodal and paid capacity](docs/MULTIMODAL_PAID.md)
