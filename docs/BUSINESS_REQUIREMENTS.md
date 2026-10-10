@@ -528,6 +528,10 @@ The Gateway must not invent precise reset times when the provider does not expos
 
 For unknown or uncertain renewal times, Gateway should support a bounded re-check schedule so sleeping clients can retry without polling aggressively.
 
+As a post-MVP enhancement, provider adapters may also extract renewal hints from provider error bodies/messages when no structured quota API or reset header exists. Example: a 429 body such as "try again in 7 days" may be converted into an inferred `reset_at` / `recheck_after` value.
+
+Such parsing must be provider-specific, best-effort and lower-confidence than structured API/header data. It must never override more authoritative quota metadata.
+
 This information is operational metadata. Client projects decide what to do with it:
 
 - OSINT may checkpoint and sleep until the suggested resume time;
