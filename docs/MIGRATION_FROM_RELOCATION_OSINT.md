@@ -89,7 +89,11 @@ When Gateway reports that the free boundary has been reached:
 4. OSINT resumes using Gateway while that allowance remains;
 5. when the allowance is exhausted, Gateway stops paid routing and OSINT checkpoints/pauses again.
 
-OSINT owns pause/resume/checkpoint orchestration. Gateway owns capacity, pricing metadata and enforcement of the spending envelope.
+When OSINT pauses because free capacity is exhausted, it should persist the Gateway-provided `resume_not_before` / `next_free_capacity_at` value when available. The scheduler may sleep the run until that time instead of repeatedly probing Gateway.
+
+If the renewal time is unknown, OSINT should use Gateway-provided or locally configured bounded re-check intervals, preserving the checkpoint between attempts.
+
+OSINT owns pause/resume/checkpoint orchestration. Gateway owns capacity, pricing metadata, quota-renewal metadata and enforcement of the spending envelope.
 
 ## Migration sequence
 
@@ -148,3 +152,4 @@ Migration is complete only when:
 7. Evidence, citation, scoring and judging logic remain owned by the OSINT project.
 8. A rollback path has been verified before deleting the old provider implementation.
 9. An OSINT run can pause at the free-capacity boundary, resume with a bounded paid allowance, and pause again when that allowance is exhausted without losing completed research.
+10. A paused OSINT run can persist a known next-free-capacity time and wake near that time; if reset time is unknown it re-checks on a bounded schedule rather than busy-polling.
