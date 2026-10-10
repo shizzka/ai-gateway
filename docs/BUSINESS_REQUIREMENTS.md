@@ -452,37 +452,41 @@ Such degradation may happen only when policy permits it and must be exposed in r
 
 The Gateway must not convert model output into a domain decision about vacancy relevance, OSINT truth, cover-letter quality or similar client semantics. Domain validation remains the client's responsibility.
 
-### BR-25. Admission control for large batch workloads
+### BR-25. Incremental capacity boundary and scoped paid budget
 
-Large, predictable batch workloads should not begin consuming capacity blindly when the Gateway can already determine that available unprotected capacity is insufficient.
+The Gateway must not pretend it knows the total future cost of a client workflow when the client has not supplied a reliable plan.
 
-Where quota/capacity information is available, the Gateway should support pre-flight admission checks for high-volume workloads such as Relocation / OSINT.
+For sequential or open-ended workflows such as Relocation / OSINT, the default behavior is incremental:
 
-If the estimated batch demand exceeds currently usable free capacity after protected reserves, the Gateway should calculate and expose the expected paid overflow rather than merely refusing the run.
+1. serve requests from eligible free capacity while preserving protected reserve floors;
+2. when the next request would cross into protected/exhausted free capacity, stop before consuming the reserve;
+3. expose that the free boundary has been reached and which paid routes are currently eligible;
+4. require an explicit paid allowance unless the request/run already has one;
+5. once allowed, meter paid usage against a scoped budget envelope;
+6. when that paid budget is exhausted, stop paid routing and return a stable budget/capacity result.
 
-The pre-flight result should show, where pricing and workload estimates allow:
+A paid budget should be scopeable at least to a project/workload/run identity. Example:
 
-- estimated workload demand;
-- free/unprotected capacity available;
-- estimated deficit that would require paid capacity;
-- eligible paid route(s);
-- estimated incremental paid cost, preferably as a range when exact token usage is uncertain;
-- whether the current workload policy allows that paid overflow automatically or requires explicit approval.
+```text
+project = relocation-osint
+run_id = research-2026-10-11
+paid_budget = USD 2.00
+```
 
-A batch may then be:
+The Gateway may then spend up to that amount for eligible calls in the scope, but never more.
 
-- admitted fully on free capacity;
-- admitted with an explicit capacity warning;
-- offered as a mixed free + paid run with an estimated cost;
-- admitted automatically when policy already permits the estimated paid overflow within budget;
-- deferred or rejected when paid usage is forbidden or the estimated cost exceeds policy/budget;
-- checkpointed before protected reserve is reached.
+The Gateway owns price metadata for provider/model routes and should calculate cost using the provider's pricing unit, for example input/output tokens, requests or generated assets. For a request whose exact output size is not yet known, it may show an estimate/range before execution and must record actual cost after execution when the provider exposes enough usage data.
 
-Admission control must not silently enable paid capacity. A cost estimate is information for policy/user approval, not permission to spend.
+If a client *does* provide a credible batch estimate, the Gateway may additionally offer a pre-flight cost forecast, but this is an optimization, not a requirement for ordinary routing.
 
-The admission decision must account for shared quota domains and higher-priority reserve floors.
+Reaching the free boundary or paid-budget boundary must be observable and may trigger a Telegram approval/alert workflow. Telegram approval is a policy change with confirmation and audit logging; an alert by itself is never permission to spend.
 
-This requirement does not require perfect forecasting. It requires avoiding obviously doomed runs while still giving the operator a practical way to launch a large batch when paying for the overflow is acceptable.
+The client remains responsible for workflow behavior after the Gateway stops routing. For example:
+
+- OSINT checkpoints progress and enters a paused/sleeping state;
+- Job Hunter applies its own business-safe fallback or stops/defer processing according to workload semantics.
+
+The Gateway must not contain OSINT- or Job-Hunter-specific continuation logic.
 
 ## 6. Policy requirements
 
@@ -502,7 +506,7 @@ The gateway should support at least these policy dimensions:
 - protected reserve floor and reserve-access policy;
 - stable request identity / idempotency policy for retriable calls;
 - retry budget / backoff policy;
-- batch admission policy.
+- run-scoped paid budget / spending-envelope policy.
 
 Policies may later be configured centrally per project and task.
 
@@ -559,8 +563,9 @@ The product is successful when:
 11. Relocation / OSINT can exhaust all capacity available to its policy without consuming protected Job Hunter reserve; Job Hunter requests remain routable while that protected capacity exists.
 12. Retrying the same request after a Gateway restart does not create uncontrolled duplicate provider work.
 13. If a weaker route is used under an allowed degradation policy, the client can see that degradation in routing metadata.
-14. A large batch can be deferred before it predictably consumes protected capacity needed by a higher-priority workload.
-15. When a large batch exceeds usable free capacity, the pre-flight result can estimate the paid overflow and expected incremental cost without silently authorizing payment.
+14. A sequential/batch workflow stops at the protected free-capacity boundary unless an explicit paid allowance exists.
+15. A run-scoped paid allowance such as USD 2.00 can be consumed but never exceeded; exhaustion is returned as a stable policy/capacity condition.
+16. If a client supplies a credible workload estimate, Gateway may provide an optional pre-flight paid-cost forecast without making forecasting a prerequisite for execution.
 
 ## 10. Open product questions
 
@@ -579,6 +584,7 @@ These remain intentionally unresolved:
 - exact retry counts, backoff rules and incident thresholds;
 - cancellation semantics when the client disconnects while an upstream provider call is already running;
 - retention TTL for completed request/idempotency records;
-- exact reserve formula above the mandatory minimum floor for countable quotas.
+- exact reserve formula above the mandatory minimum floor for countable quotas;
+- exact UX/API for granting, extending or revoking a run-scoped paid budget.
 
 These questions belong to architecture/design after business requirements are accepted.
