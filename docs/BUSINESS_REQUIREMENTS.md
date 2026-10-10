@@ -414,6 +414,62 @@ When the remaining quota reaches the P0 floor:
 
 This requirement applies across shared capabilities. If web search and LLM generation share one account-level quota domain, a low-priority search workload must not exhaust capacity reserved for a critical LLM workload.
 
+
+### BR-23. Request identity, retry and restart safety
+
+Gateway restarts and client retries must not create uncontrolled duplicate provider calls.
+
+Requests that may be retried by a client must carry a stable request identity / idempotency key. The Gateway must retain enough durable request state to distinguish:
+
+- a new request;
+- an in-progress request being retried after transport failure;
+- a completed request whose result can be returned again;
+- a terminally failed request.
+
+A process restart is not expected to preserve an existing HTTP/TCP connection. The recovery contract is instead:
+
+1. the client retries with the same request identity;
+2. the Gateway recognizes the request after restart;
+3. the Gateway either resumes safe processing or returns the already stored terminal result;
+4. the Gateway must not silently create duplicate paid or quota-consuming provider work.
+
+Internal provider retries and fallbacks must be bounded by the request deadline and retry policy.
+
+Repeated systemic failures must become observable incidents rather than infinite retry loops.
+
+### BR-24. Route degradation is not answer-quality judgement
+
+The Gateway is responsible for selecting compute capacity, not deciding whether the semantic answer is "good enough" for a client domain.
+
+For Gateway purposes, degradation means that the actual served route is weaker or less preferred than the requested route/profile, for example:
+
+- a lower quality tier;
+- a slower route;
+- local fallback instead of preferred cloud capacity;
+- another explicitly permitted compatible substitute.
+
+Such degradation may happen only when policy permits it and must be exposed in routing metadata.
+
+The Gateway must not convert model output into a domain decision about vacancy relevance, OSINT truth, cover-letter quality or similar client semantics. Domain validation remains the client's responsibility.
+
+### BR-25. Admission control for large batch workloads
+
+Large, predictable batch workloads should not begin consuming capacity blindly when the Gateway can already determine that available unprotected capacity is insufficient.
+
+Where quota/capacity information is available, the Gateway should support pre-flight admission checks for high-volume workloads such as Relocation / OSINT.
+
+A batch may be:
+
+- admitted;
+- admitted with an explicit capacity warning;
+- deferred;
+- rejected until quota recovers;
+- checkpointed before protected reserve is reached.
+
+The admission decision must account for shared quota domains and higher-priority reserve floors.
+
+This requirement does not require perfect forecasting. It requires avoiding obviously doomed runs when current capacity already proves they cannot finish safely.
+
 ## 6. Policy requirements
 
 The gateway should support at least these policy dimensions:
@@ -429,7 +485,10 @@ The gateway should support at least these policy dimensions:
 - generic task category and/or project-defined named workload profile;
 - response format / structured-output requirements;
 - workload priority / criticality;
-- protected reserve floor and reserve-access policy.
+- protected reserve floor and reserve-access policy;
+- stable request identity / idempotency policy for retriable calls;
+- retry budget / backoff policy;
+- batch admission policy.
 
 Policies may later be configured centrally per project and task.
 
@@ -449,7 +508,10 @@ The first useful version should focus on:
 - clear terminal error when no eligible resource remains;
 - reusable client connector/SDK;
 - declarative workload descriptors;
-- model registry containing routing capabilities and workload suitability metadata.
+- model registry containing routing capabilities and workload suitability metadata;
+- stable request identity and restart-safe retry semantics;
+- protected reserve enforcement for lower-priority batch work;
+- an MVP failure/acceptance matrix covering provider failure, quota exhaustion, restart and policy refusal.
 
 ## 8. Explicit non-goals for MVP
 
@@ -481,20 +543,27 @@ The product is successful when:
 9. A new project can integrate by following one standalone integration document and using the reusable connector, without copying provider/model routing code.
 10. Client projects can request a task by workload requirements while Gateway selects the concrete model dynamically.
 11. Relocation / OSINT can exhaust all capacity available to its policy without consuming protected Job Hunter reserve; Job Hunter requests remain routable while that protected capacity exists.
+12. Retrying the same request after a Gateway restart does not create uncontrolled duplicate provider work.
+13. If a weaker route is used under an allowed degradation policy, the client can see that degradation in routing metadata.
+14. A large batch can be deferred before it predictably consumes protected capacity needed by a higher-priority workload.
 
 ## 10. Open product questions
 
 These remain intentionally unresolved:
 
-- exact public API shape;
-- HTTP service vs embedded client library vs both;
-- persistence mechanism for quota/cooldown state;
+- exact public API / transport shape for the standalone Gateway service;
+- persistence mechanism for quota/cooldown state and durable idempotency records;
 - how provider quotas are discovered versus inferred from errors;
 - whether quality tiers are global or task-specific;
 - how model quality is measured and updated;
 - exact boundary between higher-level OSINT orchestration and Gateway diversity enforcement; the current requirement is that orchestration may remain in OSINT while Gateway can enforce requested model anti-affinity;
 - deployment topology for local and remote clients;
 - credential storage model;
-- whether budget ceilings should be global, per project or per workload.
+- whether budget ceilings should be global, per project or per workload;
+- exact per-workload deadlines and latency SLOs;
+- exact retry counts, backoff rules and incident thresholds;
+- cancellation semantics when the client disconnects while an upstream provider call is already running;
+- retention TTL for completed request/idempotency records;
+- exact reserve formula above the mandatory minimum floor for countable quotas.
 
 These questions belong to architecture/design after business requirements are accepted.
