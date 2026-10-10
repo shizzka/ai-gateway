@@ -253,7 +253,7 @@ The task-to-model mapping must be data/configuration driven. Adding a new model,
 
 ### BR-17. Universal project connector
 
-A new project must be able to use AI Gateway through a thin reusable connector/SDK rather than implementing provider logic.
+A new project must be able to use AI Gateway through a simple connector / stable service contract rather than implementing provider logic. The Gateway must remain a standalone service; client projects must not embed its routing engine as an in-process library.
 
 The connector is responsible for:
 
@@ -269,11 +269,13 @@ Onboarding a new project must not require modifying Gateway source code for ordi
 
 The intended developer experience is:
 
-1. add the Gateway connector dependency;
-2. configure the Gateway URL and project identity;
+1. configure a small project-side connector against the Gateway endpoint;
+2. configure the project identity;
 3. define named workload profiles or pass a declarative workload descriptor;
 4. replace direct provider calls with connector calls;
 5. receive routing automatically.
+
+A language-specific helper/SDK may exist as an optional convenience, but it must not be required to preserve routing behavior and must not contain Gateway-owned policy.
 
 A dedicated integration contract must be sufficient for a coding agent to add Gateway access to a new project without reading Job Hunter or Relocation / OSINT internals.
 
@@ -374,6 +376,114 @@ OSINT web search consumes account quota
 
 Capacity planning and Telegram status must expose this relationship rather than showing search and LLM quotas as unrelated pools.
 
+### BR-22. Critical capacity reservation and workload priority
+
+The Gateway must support protected capacity for critical workloads so that long-running or low-priority consumers cannot exhaust resources required by higher-priority clients.
+
+Workloads may be assigned priority classes or equivalent policy semantics. An initial model may be:
+
+- **P0** — critical interactive/production workloads such as Job Hunter runtime;
+- **P1** — normal interactive Gateway workloads;
+- **P2** — long-running batch workloads such as Relocation / OSINT research.
+
+The exact class names are an implementation detail, but the protection invariant is mandatory:
+
+> A lower-priority workload must not consume a resource below the reserve floor required by a higher-priority workload.
+
+The Gateway must therefore support:
+
+- reserve floors per provider/account/shared quota domain;
+- project/workload-specific access to those reserves;
+- refusal, queueing or checkpointing of lower-priority work when only protected capacity remains;
+- routing decisions that consider both current quota and protected quota;
+- persistent accounting so a restart does not forget consumed capacity or temporarily expose protected reserve;
+- observability showing protected, available and exhausted capacity separately.
+
+Example:
+
+```text
+ollama-account-1
+  quota_domain = account
+  protected_for_P0 = 25%
+
+OSINT / P2 may consume only unprotected capacity.
+When the remaining quota reaches the P0 floor:
+→ OSINT is deferred/checkpointed
+→ Job Hunter remains eligible to use the protected reserve
+```
+
+This requirement applies across shared capabilities. If web search and LLM generation share one account-level quota domain, a low-priority search workload must not exhaust capacity reserved for a critical LLM workload.
+
+
+### BR-23. Request identity, retry and restart safety
+
+Gateway restarts and client retries must not create uncontrolled duplicate provider calls.
+
+Requests that may be retried by a client must carry a stable request identity / idempotency key. The Gateway must retain enough durable request state to distinguish:
+
+- a new request;
+- an in-progress request being retried after transport failure;
+- a completed request whose result can be returned again;
+- a terminally failed request.
+
+A process restart is not expected to preserve an existing HTTP/TCP connection. The recovery contract is instead:
+
+1. the client retries with the same request identity;
+2. the Gateway recognizes the request after restart;
+3. the Gateway either resumes safe processing or returns the already stored terminal result;
+4. the Gateway must not silently create duplicate paid or quota-consuming provider work.
+
+Internal provider retries and fallbacks must be bounded by the request deadline and retry policy.
+
+Repeated systemic failures must become observable incidents rather than infinite retry loops.
+
+### BR-24. Route degradation is not answer-quality judgement
+
+The Gateway is responsible for selecting compute capacity, not deciding whether the semantic answer is "good enough" for a client domain.
+
+For Gateway purposes, degradation means that the actual served route is weaker or less preferred than the requested route/profile, for example:
+
+- a lower quality tier;
+- a slower route;
+- local fallback instead of preferred cloud capacity;
+- another explicitly permitted compatible substitute.
+
+Such degradation may happen only when policy permits it and must be exposed in routing metadata.
+
+The Gateway must not convert model output into a domain decision about vacancy relevance, OSINT truth, cover-letter quality or similar client semantics. Domain validation remains the client's responsibility.
+
+### BR-25. Admission control for large batch workloads
+
+Large, predictable batch workloads should not begin consuming capacity blindly when the Gateway can already determine that available unprotected capacity is insufficient.
+
+Where quota/capacity information is available, the Gateway should support pre-flight admission checks for high-volume workloads such as Relocation / OSINT.
+
+If the estimated batch demand exceeds currently usable free capacity after protected reserves, the Gateway should calculate and expose the expected paid overflow rather than merely refusing the run.
+
+The pre-flight result should show, where pricing and workload estimates allow:
+
+- estimated workload demand;
+- free/unprotected capacity available;
+- estimated deficit that would require paid capacity;
+- eligible paid route(s);
+- estimated incremental paid cost, preferably as a range when exact token usage is uncertain;
+- whether the current workload policy allows that paid overflow automatically or requires explicit approval.
+
+A batch may then be:
+
+- admitted fully on free capacity;
+- admitted with an explicit capacity warning;
+- offered as a mixed free + paid run with an estimated cost;
+- admitted automatically when policy already permits the estimated paid overflow within budget;
+- deferred or rejected when paid usage is forbidden or the estimated cost exceeds policy/budget;
+- checkpointed before protected reserve is reached.
+
+Admission control must not silently enable paid capacity. A cost estimate is information for policy/user approval, not permission to spend.
+
+The admission decision must account for shared quota domains and higher-priority reserve floors.
+
+This requirement does not require perfect forecasting. It requires avoiding obviously doomed runs while still giving the operator a practical way to launch a large batch when paying for the overflow is acceptable.
+
 ## 6. Policy requirements
 
 The gateway should support at least these policy dimensions:
@@ -387,7 +497,12 @@ The gateway should support at least these policy dimensions:
 - role-specific budget / paid policy;
 - optional diversity or anti-affinity group for independent multi-model work;
 - generic task category and/or project-defined named workload profile;
-- response format / structured-output requirements.
+- response format / structured-output requirements;
+- workload priority / criticality;
+- protected reserve floor and reserve-access policy;
+- stable request identity / idempotency policy for retriable calls;
+- retry budget / backoff policy;
+- batch admission policy.
 
 Policies may later be configured centrally per project and task.
 
@@ -407,7 +522,10 @@ The first useful version should focus on:
 - clear terminal error when no eligible resource remains;
 - reusable client connector/SDK;
 - declarative workload descriptors;
-- model registry containing routing capabilities and workload suitability metadata.
+- model registry containing routing capabilities and workload suitability metadata;
+- stable request identity and restart-safe retry semantics;
+- protected reserve enforcement for lower-priority batch work;
+- an MVP failure/acceptance matrix covering provider failure, quota exhaustion, restart and policy refusal.
 
 ## 8. Explicit non-goals for MVP
 
@@ -438,20 +556,29 @@ The product is successful when:
 8. Relocation / OSINT can run its researcher/scout and judge roles through the same Gateway while preserving free-only scout policy, explicit judge budget policy and required model diversity.
 9. A new project can integrate by following one standalone integration document and using the reusable connector, without copying provider/model routing code.
 10. Client projects can request a task by workload requirements while Gateway selects the concrete model dynamically.
+11. Relocation / OSINT can exhaust all capacity available to its policy without consuming protected Job Hunter reserve; Job Hunter requests remain routable while that protected capacity exists.
+12. Retrying the same request after a Gateway restart does not create uncontrolled duplicate provider work.
+13. If a weaker route is used under an allowed degradation policy, the client can see that degradation in routing metadata.
+14. A large batch can be deferred before it predictably consumes protected capacity needed by a higher-priority workload.
+15. When a large batch exceeds usable free capacity, the pre-flight result can estimate the paid overflow and expected incremental cost without silently authorizing payment.
 
 ## 10. Open product questions
 
 These remain intentionally unresolved:
 
-- exact public API shape;
-- HTTP service vs embedded client library vs both;
-- persistence mechanism for quota/cooldown state;
+- exact public API / transport shape for the standalone Gateway service;
+- persistence mechanism for quota/cooldown state and durable idempotency records;
 - how provider quotas are discovered versus inferred from errors;
 - whether quality tiers are global or task-specific;
 - how model quality is measured and updated;
 - exact boundary between higher-level OSINT orchestration and Gateway diversity enforcement; the current requirement is that orchestration may remain in OSINT while Gateway can enforce requested model anti-affinity;
 - deployment topology for local and remote clients;
 - credential storage model;
-- whether budget ceilings should be global, per project or per workload.
+- whether budget ceilings should be global, per project or per workload;
+- exact per-workload deadlines and latency SLOs;
+- exact retry counts, backoff rules and incident thresholds;
+- cancellation semantics when the client disconnects while an upstream provider call is already running;
+- retention TTL for completed request/idempotency records;
+- exact reserve formula above the mandatory minimum floor for countable quotas.
 
 These questions belong to architecture/design after business requirements are accepted.

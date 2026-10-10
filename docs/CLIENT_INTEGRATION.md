@@ -127,6 +127,7 @@ A connector request should be able to include:
 - deadline/timeout;
 - response format or JSON schema;
 - optional diversity/anti-affinity group;
+- stable request ID / idempotency key for retriable calls;
 - optional caller trace/correlation ID.
 
 ## Response contract
@@ -141,9 +142,31 @@ A successful response should provide:
 - latency metadata;
 - token usage when available;
 - cost metadata when available;
-- trace/correlation ID.
+- trace/correlation ID;
+- requested vs served quality/routing tier when applicable;
+- whether explicit route degradation occurred and why.
 
 The connector may expose a simplified response by default, but routing provenance must be obtainable for diagnostics and OSINT independence checks.
+
+
+## Retry, idempotency and restart contract
+
+Client retries and Gateway/provider retries are separate concerns.
+
+For any request that may be retried after a timeout, disconnect or Gateway restart:
+
+- the client should reuse the same stable request ID / idempotency key;
+- the Gateway must recognize duplicate delivery of that logical request;
+- the Gateway must not launch uncontrolled duplicate upstream calls;
+- if a terminal result is already stored, the Gateway may return it again;
+- if work is still safely resumable, the Gateway may resume it;
+- if safe continuation is impossible, the Gateway returns a stable Gateway-level failure rather than pretending the request succeeded.
+
+A Gateway process restart is not expected to keep an old HTTP connection alive. Recovery occurs by client retry with the same request identity.
+
+Provider retries/fallbacks inside one logical request must remain within the request deadline and configured retry budget.
+
+The exact persistence mechanism, retry count/backoff and result-retention TTL are architecture decisions, but these semantics are part of the product contract.
 
 ## Error contract
 

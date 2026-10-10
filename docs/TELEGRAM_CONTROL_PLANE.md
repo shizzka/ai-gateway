@@ -23,13 +23,15 @@ Telegram should make it possible to:
 Notify when:
 
 - an account/provider reports quota exhaustion;
-- remaining quota crosses configured warning thresholds where quota data is available;
+- remaining quota crosses configured warning thresholds where quota data is available; initial default warning levels are 30%, 20% and 10% remaining;
 - repeated rate limits push a resource into cooldown;
 - all free capacity for a workload class is exhausted;
 - paid fallback becomes the only eligible route;
 - a paid route is blocked because policy forbids spending.
 
 Where providers do not expose quota APIs, Gateway may report inferred state based on observed errors and cooldown history. The message must distinguish measured quota from inferred exhaustion.
+
+Quota threshold alerts must be deduplicated: crossing a threshold should produce one alert for that depletion cycle, not one message per request while the account remains below the threshold. Recovery or quota reset should re-arm the thresholds. Alerts should also show any protected reserve floor so an operator can distinguish total remaining quota from quota still available to lower-priority workloads.
 
 ### Credential / authentication alerts
 
@@ -206,6 +208,25 @@ Example intents:
 - `/errors`
 
 Prompt and response bodies should not be included by default.
+
+
+### Request trace inspection
+
+A read-only trace lookup should make it possible to answer "why did this request use that route?" without reading raw log files.
+
+Given a request/trace ID, the control plane should show a compact decision trail such as:
+
+- workload/profile and hard requirements;
+- candidates rejected by policy/capability/quota/cooldown;
+- selected provider/account/model;
+- fallback attempts;
+- requested vs served quality tier;
+- whether degradation was used;
+- terminal status/error class.
+
+Example intent: `/trace <id>`.
+
+Prompt/response bodies remain hidden by default.
 
 ### Manual health check
 
