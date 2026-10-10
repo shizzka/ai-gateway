@@ -24,7 +24,10 @@ It is intentionally implementation-neutral. A green unit-test suite is not suffi
 | Gateway restart during a logical request | The old transport may die. Client retries with the same request ID; Gateway deduplicates, resumes safely or returns stored terminal state. |
 | Duplicate delivery of same logical request | Must not cause uncontrolled duplicate upstream/paid/quota-consuming calls. |
 | Lower-priority OSINT reaches protected JH reserve | Defer/reject/checkpoint OSINT. JH remains eligible for its protected reserve. |
-| Predictably too-large OSINT batch | Perform admission/pre-flight capacity check where data permits. If free capacity is insufficient, show the estimated deficit and paid overflow cost/range for eligible paid routes. Do not silently spend or violate reserve floors. |
+| OSINT reaches protected/free-capacity boundary | Stop before consuming protected reserve. Alert/return that free capacity is exhausted for the run and expose eligible paid routes. Continue only if an explicit scoped paid budget exists or is granted. |
+| OSINT run receives a USD 2 paid allowance | Paid eligible calls may consume up to USD 2 for that run. Actual spend is metered; Gateway must not exceed the envelope. |
+| Run-scoped paid budget is exhausted | Stop paid routing, return a stable budget/capacity condition and alert. OSINT/JH decide how to pause/fallback; Gateway does not own client continuation logic. |
+| Client supplies a credible batch estimate | Gateway may provide a pre-flight cost forecast, but lack of a full-run estimate must not block incremental execution. |
 | Partial outage | Some capacity/routes are unavailable but at least some permitted requests remain serviceable. |
 | Full outage for a request | No eligible route exists for that request under its hard policy, even if Gateway itself is still running. |
 | Telegram unavailable | Routing continues. Telegram is not a routing dependency. |
