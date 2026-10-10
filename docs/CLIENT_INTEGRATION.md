@@ -128,6 +128,8 @@ A connector request should be able to include:
 - response format or JSON schema;
 - optional diversity/anti-affinity group;
 - stable request ID / idempotency key for retriable calls;
+- optional run/budget scope identity for long-running workflows;
+- optional paid budget ceiling for that scope;
 - optional caller trace/correlation ID.
 
 ## Response contract
@@ -144,7 +146,9 @@ A successful response should provide:
 - cost metadata when available;
 - trace/correlation ID;
 - requested vs served quality/routing tier when applicable;
-- whether explicit route degradation occurred and why.
+- whether explicit route degradation occurred and why;
+- paid cost for the call when known;
+- remaining scoped paid budget when applicable.
 
 The connector may expose a simplified response by default, but routing provenance must be obtainable for diagnostics and OSINT independence checks.
 
@@ -182,6 +186,8 @@ Examples:
 - `GatewayUnavailable`
 
 Exact names may change during API design; the requirement is a stable provider-independent error taxonomy.
+
+The taxonomy must also represent a free-capacity/budget boundary without pretending it is a model answer. A future concrete name might be `PaidApprovalRequired` or `BudgetExhausted`; the exact API name is not frozen.
 
 ## OpenAI compatibility
 
