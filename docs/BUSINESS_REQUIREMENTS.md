@@ -488,6 +488,51 @@ The client remains responsible for workflow behavior after the Gateway stops rou
 
 The Gateway must not contain OSINT- or Job-Hunter-specific continuation logic.
 
+
+### BR-26. Quota renewal awareness and next-availability time
+
+Quota exhaustion is not useful operational information without knowing when capacity is expected to return.
+
+For every quota-limited resource/domain, the Gateway should track the best available renewal information, including when possible:
+
+- quota/reset period: rolling, hourly, daily, monthly or one-time;
+- next known or estimated reset/refill timestamp;
+- source of that timestamp;
+- confidence/status: provider-reported, header-derived, configured from provider policy, inferred from observed history, or unknown;
+- whether the reset restores the whole quota or only part of a rolling window.
+
+When a request/run stops because free capacity is exhausted or protected reserve has been reached, Gateway should expose a derived `next_free_capacity_at` / `resume_not_before` when it can determine one.
+
+This value should represent the earliest time at which an eligible route for the workload is expected to become usable again, not merely the reset time of whichever provider failed last.
+
+Examples:
+
+```text
+ollama-account-1
+state = exhausted
+quota_reset_at = 2026-10-11T08:00:00+03:00
+reset_source = provider_policy
+confidence = configured
+```
+
+or:
+
+```text
+free capacity exhausted
+next_free_capacity_at = unknown
+reason = provider exposes no reset time
+recheck_after = 1h
+```
+
+The Gateway must not invent precise reset times when the provider does not expose enough information. Unknown must remain a valid state.
+
+For unknown or uncertain renewal times, Gateway should support a bounded re-check schedule so sleeping clients can retry without polling aggressively.
+
+This information is operational metadata. Client projects decide what to do with it:
+
+- OSINT may checkpoint and sleep until the suggested resume time;
+- Job Hunter/operator may decide that waiting until morning is acceptable or enable local/paid capacity if the reset is too far away.
+
 ## 6. Policy requirements
 
 The gateway should support at least these policy dimensions:
@@ -506,7 +551,8 @@ The gateway should support at least these policy dimensions:
 - protected reserve floor and reserve-access policy;
 - stable request identity / idempotency policy for retriable calls;
 - retry budget / backoff policy;
-- run-scoped paid budget / spending-envelope policy.
+- run-scoped paid budget / spending-envelope policy;
+- quota renewal / next-availability policy.
 
 Policies may later be configured centrally per project and task.
 
@@ -566,6 +612,7 @@ The product is successful when:
 14. A sequential/batch workflow stops at the protected free-capacity boundary unless an explicit paid allowance exists.
 15. A run-scoped paid allowance such as USD 2.00 can be consumed but never exceeded; exhaustion is returned as a stable policy/capacity condition.
 16. If a client supplies a credible workload estimate, Gateway may provide an optional pre-flight paid-cost forecast without making forecasting a prerequisite for execution.
+17. When a workload stops for exhausted free capacity, the client can determine the best-known next free-capacity time or explicitly see that it is unknown.
 
 ## 10. Open product questions
 
@@ -585,6 +632,7 @@ These remain intentionally unresolved:
 - cancellation semantics when the client disconnects while an upstream provider call is already running;
 - retention TTL for completed request/idempotency records;
 - exact reserve formula above the mandatory minimum floor for countable quotas;
-- exact UX/API for granting, extending or revoking a run-scoped paid budget.
+- exact UX/API for granting, extending or revoking a run-scoped paid budget;
+- provider-specific quota reset discovery rules and default re-check cadence when renewal time is unknown.
 
 These questions belong to architecture/design after business requirements are accepted.
