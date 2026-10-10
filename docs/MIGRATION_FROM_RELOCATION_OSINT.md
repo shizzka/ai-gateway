@@ -73,11 +73,23 @@ The OSINT project currently reasons about independent model count using actual p
 
 Gateway responses must expose enough metadata to identify the effective provider/model used for each call so OSINT can verify independence and audit results.
 
-### Safe exhaustion
+### Safe exhaustion and pause/resume
 
 If required independent researchers cannot be obtained, the Gateway must return a clear capacity/policy failure rather than pretending the requested diversity requirement was met.
 
 If the judge has no eligible model under its budget/capability policy, judging must fail explicitly.
+
+For long sequential research runs, Relocation / OSINT should continue consuming free capacity only while it remains outside protected reserve floors.
+
+When Gateway reports that the free boundary has been reached:
+
+1. OSINT checkpoints completed work;
+2. the run enters a paused/waiting state rather than discarding progress;
+3. the operator may grant a scoped paid allowance such as USD 2 for that run;
+4. OSINT resumes using Gateway while that allowance remains;
+5. when the allowance is exhausted, Gateway stops paid routing and OSINT checkpoints/pauses again.
+
+OSINT owns pause/resume/checkpoint orchestration. Gateway owns capacity, pricing metadata and enforcement of the spending envelope.
 
 ## Migration sequence
 
@@ -135,3 +147,4 @@ Migration is complete only when:
 6. Provider rate limits or model retirement can be handled without changing OSINT domain code.
 7. Evidence, citation, scoring and judging logic remain owned by the OSINT project.
 8. A rollback path has been verified before deleting the old provider implementation.
+9. An OSINT run can pause at the free-capacity boundary, resume with a bounded paid allowance, and pause again when that allowance is exhausted without losing completed research.
