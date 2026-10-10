@@ -34,6 +34,8 @@ Migration must preserve these business semantics:
 6. Provider/model metadata remains observable.
 7. Local emergency capacity can be disabled without changing application code.
 8. Credentials and full candidate data are not exposed through ordinary analytics.
+9. When free capacity is unavailable, Job Hunter can distinguish `paid approval/budget required` from generic infrastructure failure and apply workload-specific fallback/defer behavior.
+10. If a bounded paid allowance is granted to a Job Hunter workload/run, Gateway enforces the ceiling and Job Hunter remains responsible for what to do after that ceiling is exhausted.
 
 ## Job Hunter migration sequence
 
@@ -89,4 +91,5 @@ Migration is complete only when:
 - current retry/fallback scenarios have equivalent or safer outcomes through Gateway;
 - local model fallback works through Gateway rather than Job Hunter-specific slots;
 - no weaker model can silently bypass Job Hunter's business safety semantics;
-- rollback has been tested before the old routing code is deleted.
+- rollback has been tested before the old routing code is deleted;
+- Job Hunter correctly handles free-capacity boundary and paid-budget exhaustion as infrastructure/policy states rather than model decisions.
