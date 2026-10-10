@@ -148,7 +148,8 @@ A successful response should provide:
 - requested vs served quality/routing tier when applicable;
 - whether explicit route degradation occurred and why;
 - paid cost for the call when known;
-- remaining scoped paid budget when applicable.
+- remaining scoped paid budget when applicable;
+- best-known quota/reset/next-availability metadata when the route is capacity-constrained.
 
 The connector may expose a simplified response by default, but routing provenance must be obtainable for diagnostics and OSINT independence checks.
 
@@ -188,6 +189,8 @@ Examples:
 Exact names may change during API design; the requirement is a stable provider-independent error taxonomy.
 
 The taxonomy must also represent a free-capacity/budget boundary without pretending it is a model answer. A future concrete name might be `PaidApprovalRequired` or `BudgetExhausted`; the exact API name is not frozen.
+
+Capacity-related responses/errors should be able to carry `next_free_capacity_at` / `resume_not_before`, reset source/confidence and a bounded `recheck_after` when exact renewal time is unknown.
 
 ## OpenAI compatibility
 
