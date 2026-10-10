@@ -458,17 +458,31 @@ Large, predictable batch workloads should not begin consuming capacity blindly w
 
 Where quota/capacity information is available, the Gateway should support pre-flight admission checks for high-volume workloads such as Relocation / OSINT.
 
-A batch may be:
+If the estimated batch demand exceeds currently usable free capacity after protected reserves, the Gateway should calculate and expose the expected paid overflow rather than merely refusing the run.
 
-- admitted;
+The pre-flight result should show, where pricing and workload estimates allow:
+
+- estimated workload demand;
+- free/unprotected capacity available;
+- estimated deficit that would require paid capacity;
+- eligible paid route(s);
+- estimated incremental paid cost, preferably as a range when exact token usage is uncertain;
+- whether the current workload policy allows that paid overflow automatically or requires explicit approval.
+
+A batch may then be:
+
+- admitted fully on free capacity;
 - admitted with an explicit capacity warning;
-- deferred;
-- rejected until quota recovers;
+- offered as a mixed free + paid run with an estimated cost;
+- admitted automatically when policy already permits the estimated paid overflow within budget;
+- deferred or rejected when paid usage is forbidden or the estimated cost exceeds policy/budget;
 - checkpointed before protected reserve is reached.
+
+Admission control must not silently enable paid capacity. A cost estimate is information for policy/user approval, not permission to spend.
 
 The admission decision must account for shared quota domains and higher-priority reserve floors.
 
-This requirement does not require perfect forecasting. It requires avoiding obviously doomed runs when current capacity already proves they cannot finish safely.
+This requirement does not require perfect forecasting. It requires avoiding obviously doomed runs while still giving the operator a practical way to launch a large batch when paying for the overflow is acceptable.
 
 ## 6. Policy requirements
 
@@ -546,6 +560,7 @@ The product is successful when:
 12. Retrying the same request after a Gateway restart does not create uncontrolled duplicate provider work.
 13. If a weaker route is used under an allowed degradation policy, the client can see that degradation in routing metadata.
 14. A large batch can be deferred before it predictably consumes protected capacity needed by a higher-priority workload.
+15. When a large batch exceeds usable free capacity, the pre-flight result can estimate the paid overflow and expected incremental cost without silently authorizing payment.
 
 ## 10. Open product questions
 
