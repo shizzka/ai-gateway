@@ -22,7 +22,7 @@ Telegram should make it possible to:
 
 Notify when:
 
-- an account/provider reports quota exhaustion;
+- an account/provider reports quota exhaustion, including the best-known reset/refill time when available;
 - remaining quota crosses configured warning thresholds where quota data is available; initial default warning levels are 30%, 20% and 10% remaining;
 - repeated rate limits push a resource into cooldown;
 - all free capacity for a workload class is exhausted;
@@ -32,6 +32,8 @@ Notify when:
 Where providers do not expose quota APIs, Gateway may report inferred state based on observed errors and cooldown history. The message must distinguish measured quota from inferred exhaustion.
 
 Quota threshold alerts must be deduplicated: crossing a threshold should produce one alert for that depletion cycle, not one message per request while the account remains below the threshold. Recovery or quota reset should re-arm the thresholds. Alerts should also show any protected reserve floor so an operator can distinguish total remaining quota from quota still available to lower-priority workloads.
+
+When known, quota alerts should include `reset_at` / `next_free_capacity_at` and identify whether that time is provider-reported, header-derived, configured, inferred, or unknown. This lets the operator distinguish "capacity returns this morning" from "capacity may be unavailable for weeks" before deciding whether to enable local or paid fallback.
 
 ### Credential / authentication alerts
 
@@ -194,6 +196,15 @@ The response must state whether quota is:
 - locally estimated;
 - inferred from failures;
 - unknown.
+
+Where available it should also show:
+
+- current remaining quota / reserve;
+- quota period/window;
+- `reset_at` or rolling refill information;
+- source/confidence of the reset time;
+- derived `next_free_capacity_at` for affected workload classes;
+- next scheduled re-check when reset time is unknown.
 
 ### Budgets and cost
 
