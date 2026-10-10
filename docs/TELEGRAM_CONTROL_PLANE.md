@@ -74,11 +74,36 @@ Recovery notifications are important. An alerting system that only screams and n
 
 Notify when:
 
+- a free-only run reaches protected/free-capacity boundary and paid capacity would be required to continue;
+- an operator-granted run/workload paid budget is nearing exhaustion;
+- a scoped paid budget is exhausted;
+
 - daily/monthly/project budget crosses warning thresholds;
 - a paid call is actually used;
 - paid usage is attempted but blocked;
 - a workload unexpectedly starts consuming paid capacity;
+- a run receives, extends or revokes a scoped paid allowance;
 - cost metadata is unavailable for a paid route.
+
+
+### Paid-budget approval
+
+The control plane may support an explicit operator action to grant or extend a bounded paid budget for a project/workload/run, for example the semantic equivalent of:
+
+```text
+allow paid for run research-2026-10-11 up to USD 2.00
+```
+
+This is a mutating financial-policy action and therefore requires:
+
+- authorized user/chat;
+- explicit amount and scope;
+- confirmation;
+- audit logging;
+- visibility of current spend and remaining allowance;
+- no implicit renewal when the allowance is exhausted.
+
+Exact command/button UX is an implementation detail.
 
 ### Routing quality / reliability alerts
 
