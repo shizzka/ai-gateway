@@ -24,12 +24,14 @@ It is intentionally implementation-neutral. A green unit-test suite is not suffi
 | Gateway restart during a logical request | The old transport may die. Client retries with the same request ID; Gateway deduplicates, resumes safely or returns stored terminal state. |
 | Duplicate delivery of same logical request | Must not cause uncontrolled duplicate upstream/paid/quota-consuming calls. |
 | Lower-priority OSINT reaches protected JH reserve | Defer/reject/checkpoint OSINT. JH remains eligible for its protected reserve. |
-| OSINT reaches protected/free-capacity boundary | Stop before consuming protected reserve. Alert/return that free capacity is exhausted for the run and expose eligible paid routes. Continue only if an explicit scoped paid budget exists or is granted. |
+| OSINT reaches protected/free-capacity boundary | Stop before consuming protected reserve. Return/alert the best-known `next_free_capacity_at` / `resume_not_before`, plus eligible paid routes. Continue only if an explicit scoped paid budget exists or is granted. |
 | OSINT run receives a USD 2 paid allowance | Paid eligible calls may consume up to USD 2 for that run. Actual spend is metered; Gateway must not exceed the envelope. |
 | Run-scoped paid budget is exhausted | Stop paid routing, return a stable budget/capacity condition and alert. OSINT/JH decide how to pause/fallback; Gateway does not own client continuation logic. |
 | Client supplies a credible batch estimate | Gateway may provide a pre-flight cost forecast, but lack of a full-run estimate must not block incremental execution. |
 | Partial outage | Some capacity/routes are unavailable but at least some permitted requests remain serviceable. |
 | Full outage for a request | No eligible route exists for that request under its hard policy, even if Gateway itself is still running. |
+| Provider exposes quota reset time | Persist/expose the reset timestamp and its source/confidence; use it when deriving when a paused workload may resume. |
+| Provider does not expose quota reset time | Report reset time as unknown; use bounded scheduled re-checks rather than inventing a timestamp or hot-loop polling. |
 | Telegram unavailable | Routing continues. Telegram is not a routing dependency. |
 | Routing diagnostics | Every request has a trace/correlation ID and route decision metadata; Telegram may expose a read-only trace view. |
 
